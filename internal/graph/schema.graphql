@@ -1,0 +1,110 @@
+type Liquor {
+    _id: ID!
+    name: String!
+    EAN: Int!
+    category: String!
+    description: String!
+    additional_attributes: String!
+}
+
+type Recipe {
+    _id: ID!
+    name: String!
+    ingredients: [String!]!
+    instructions: String!
+    category: String!
+    createdAt: String!
+    liquors: [String!]!
+}
+
+type User {
+    user_id: ID!
+    name: String!
+    lastname: String!
+    email: String!
+    country: String!
+    phone: String!
+    image: String!
+}
+
+type SuccessfulLogin {
+    user_id: ID!
+    name: String!
+    double_auth: Boolean!
+    expiration: String!
+    token: String!
+    account_type: String!
+}
+
+type Error {
+    message: String!
+    status: Int!
+}
+
+type DeleteLiquorResponse {
+    data: String
+    error: Error
+}
+
+type DeleteRecipeResponse {
+    data: String
+    error: Error
+}
+
+type LiquorResponse {
+    data: Liquor
+    error: Error
+}
+
+type LiquorsResponse {
+    data: [Liquor!]
+    error: Error
+}
+
+type RecipeResponse {
+    data: Recipe
+    error: Error
+}
+
+type RecipesResponse {
+    data: [Recipe!]
+    error: Error
+}
+
+type UserResponse {
+    data: User
+    error: Error
+}
+
+type LoginResponse {
+    data: SuccessfulLogin
+    error: Error
+}
+
+type VerifyResponse {
+    data: String
+    error: Error
+}
+
+type Query {
+    liquors: LiquorsResponse
+    liquor(_id: ID!): LiquorResponse
+
+    recipes: RecipesResponse
+    recipe(_id: ID!): RecipeResponse
+
+    verify(token: String!): VerifyResponse
+}
+
+type Mutation {
+    createLiquor(name: String!, EAN: Int!, category: String!, description: String!, additional_attributes: String!): LiquorResponse
+    updateLiquor(_id: ID!, name: String, EAN: Int, category: String, description: String, additional_attributes: String): LiquorResponse
+    deleteLiquor(_id: ID!): DeleteLiquorResponse
+
+    createRecipe(name: String!, ingredients: [String!]!, instructions: String!, category: String!, liquors: [String!]!): RecipeResponse
+    updateRecipe(_id: ID!, name: String, ingredients: [String!], instructions: String, category: String, liquors: [String!]): RecipeResponse
+    deleteRecipe(_id: ID!): DeleteRecipeResponse
+
+    register(name: String!, lastname: String, phone: String, email: String!, image: String, username: String, password: String!, type: String): UserResponse
+    login(user: String!, password: String!, type: String): LoginResponse
+}
