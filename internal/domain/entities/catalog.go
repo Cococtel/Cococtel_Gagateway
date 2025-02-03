@@ -20,22 +20,23 @@ type (
 		Liquors      []string `json:"liquors,omitempty"`
 	}
 
-	User struct {
-		UserID   string `json:"user_id"`
-		Name     string `json:"name,omitempty"`
-		Lastname string `json:"lastname,omitempty"`
-		Email    string `json:"email,omitempty"`
-		Country  string `json:"country,omitempty"`
-		Phone    string `json:"phone,omitempty"`
-		Image    string `json:"image,omitempty"`
+	AIRecipe struct {
+		CocktailName string       `json:"cocktailName"`
+		Ingredients  []Ingredient `json:"ingredients"`
+		Steps        []string     `json:"steps"`
+		Observations string       `json:"observations"`
 	}
 
-	SuccessfulLogin struct {
-		UserID      string `json:"id"`
-		Name        string `json:"name,omitempty"`
-		DoubleAuth  bool   `json:"double_auth,omitempty"`
-		Expiration  string `json:"expiration,omitempty"`
-		Token       string `json:"token,omitempty"`
-		AccountType string `json:"account_type,omitempty"`
+	Ingredient struct {
+		Name     string `json:"name"`
+		Quantity string `json:"quantity"`
+	}
+
+	Product struct {
+		Name                 string `json:"name"`
+		PhotoLink            string `json:"photo_link"`
+		Description          string `json:"description"`
+		AdditionalAttributes string `json:"additional_attributes"`
+		ISBN                 string `json:"isbn"`
 	}
 )

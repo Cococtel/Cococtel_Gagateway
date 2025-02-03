@@ -15,7 +15,7 @@ type (
 	IAuth interface {
 		Verify(token string) error
 		Register(user dtos.Register) (*entities.User, error)
-		Login(credentials dtos.Login) (*entities.SuccessfulLogin, error)
+		Login(credentails dtos.Login) (*entities.SuccessfulLogin, error)
 	}
 	authRepository struct{}
 )
@@ -67,9 +67,9 @@ func (r *authRepository) Register(user dtos.Register) (*entities.User, error) {
 	return &registeredUser, nil
 }
 
-func (r *authRepository) Login(credentials dtos.Login) (*entities.SuccessfulLogin, error) {
+func (r *authRepository) Login(credentails dtos.Login) (*entities.SuccessfulLogin, error) {
 	url := fmt.Sprintf("%s/login", ms_authorization_endpoint)
-	body, _ := json.Marshal(credentials)
+	body, _ := json.Marshal(credentails)
 
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {

@@ -13,7 +13,7 @@ type (
 	IAuth interface {
 		Verify(token string) utils.ApiError
 		Register(user dtos.Register) (*entities.User, utils.ApiError)
-		Login(credentials dtos.Login) (*entities.SuccessfulLogin, utils.ApiError)
+		Login(credentails dtos.Login) (*entities.SuccessfulLogin, utils.ApiError)
 	}
 	authService struct {
 		authRepo authrepository.IAuth
@@ -40,8 +40,8 @@ func (s *authService) Register(user dtos.Register) (*entities.User, utils.ApiErr
 	return newUser, nil
 }
 
-func (s *authService) Login(credentials dtos.Login) (*entities.SuccessfulLogin, utils.ApiError) {
-	loginResponse, err := s.authRepo.Login(credentials)
+func (s *authService) Login(credentails dtos.Login) (*entities.SuccessfulLogin, utils.ApiError) {
+	loginResponse, err := s.authRepo.Login(credentails)
 	if err != nil {
 		return nil, utils.NewApiError(errors.New("login error"), http.StatusInternalServerError)
 	}

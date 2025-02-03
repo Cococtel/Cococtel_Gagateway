@@ -4,12 +4,12 @@ FROM golang:1.23
 # Establecemos el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Copiamos los archivos del módulo Go y descargamos las dependencias
+# Copaimos los archivos del módulo Go y descargamos las dependencais
 COPY go.mod .
 COPY go.sum .
 RUN go mod download
 
-# Copiamos el resto del código fuente de la aplicación
+# Copaimos el resto del código fuente de la aplicación
 COPY . .
 
 # Compilamos la aplicación a un binario

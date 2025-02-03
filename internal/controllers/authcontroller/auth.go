@@ -52,7 +52,7 @@ func (a *authController) Verify() gin.HandlerFunc {
 
 func (a *authController) Register() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		var user dtos.Login
+		var user dtos.Register
 		if err := ctx.ShouldBindJSON(&user); err != nil {
 			utils.Response(ctx, http.StatusBadRequest, map[string]interface{}{
 				"data":  nil,
@@ -79,8 +79,8 @@ func (a *authController) Register() gin.HandlerFunc {
 
 func (a *authController) Login() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		var credentials dtos.Register
-		if err := ctx.ShouldBindJSON(&credentials); err != nil {
+		var credentails dtos.Login
+		if err := ctx.ShouldBindJSON(&credentails); err != nil {
 			utils.Response(ctx, http.StatusBadRequest, map[string]interface{}{
 				"data":  nil,
 				"error": map[string]interface{}{"message": "Datos inválidos", "status": http.StatusBadRequest},
@@ -88,7 +88,7 @@ func (a *authController) Login() gin.HandlerFunc {
 			return
 		}
 
-		loginResponse, apiErr := a.authService.Login(credentials)
+		loginResponse, apiErr := a.authService.Login(credentails)
 		if apiErr != nil {
 			utils.Response(ctx, apiErr.Status(), map[string]interface{}{
 				"data":  nil,

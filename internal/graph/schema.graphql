@@ -36,6 +36,26 @@ type SuccessfulLogin {
     account_type: String!
 }
 
+type Ingredient {
+    name: String!
+    quantity: String!
+}
+
+type AIRecipe {
+    cocktailName: String!
+    ingredients: [Ingredient!]!
+    steps: [String!]!
+    observations: String!
+}
+
+type Product {
+    name: String!
+    photo_link: String!
+    description: String!
+    additional_attributes: String!
+    isbn: String!
+}
+
 type Error {
     message: String!
     status: Int!
@@ -86,6 +106,21 @@ type VerifyResponse {
     error: Error
 }
 
+type StringProcessResponse {
+    data: String
+    error: Error
+}
+
+type AIRecipeResponse {
+    data: AIRecipe
+    error: Error
+}
+
+type ProductResponse {
+    data: Product
+    error: Error
+}
+
 type Query {
     liquors: LiquorsResponse
     liquor(_id: ID!): LiquorResponse
@@ -94,6 +129,8 @@ type Query {
     recipe(_id: ID!): RecipeResponse
 
     verify(token: String!): VerifyResponse
+
+    getProductByCode(code: String!): ProductResponse
 }
 
 type Mutation {
@@ -107,4 +144,7 @@ type Mutation {
 
     register(name: String!, lastname: String, phone: String, email: String!, image: String, username: String, password: String!, type: String): UserResponse
     login(user: String!, password: String!, type: String): LoginResponse
+    
+    processStrings(input: [String!]!): StringProcessResponse
+    createAIRecipe(liquor: String!): AIRecipeResponse
 }

@@ -32,7 +32,7 @@ func getApiKeys() error {
 	mustGetenv := func(k string) string {
 		v := os.Getenv(k)
 		if v == "" {
-			log.Fatalf("Fatal Error in main.go: %s environment variable not set.", k)
+			log.Fatalf("Fatal Error in main.go: %s environment varaible not set.", k)
 		}
 		return v
 	}

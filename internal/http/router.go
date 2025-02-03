@@ -38,12 +38,18 @@ func (r *router) setGroup(apiKeys []string) {
 
 func (r *router) buildRoutes() {
 	catalogRepository := catalogrepository.NewCatalogRepository()
+	aiRepository := catalogrepository.NewAIRepository()
+	scrappingRepository := catalogrepository.NewScrappingRepository()
 	authRepository := authrepository.NewAuthRepository()
 
 	catalogService := catalogservice.NewCatalogService(catalogRepository)
+	aiService := catalogservice.NewAIService(aiRepository)
+	scrappingService := catalogservice.NewScrappingService(scrappingRepository)
 	authService := authservice.NewAuthService(authRepository)
 
 	catalogController := catalogcontroller.NewLiquorController(catalogService)
+	aiController := catalogcontroller.NewAIController(aiService)
+	scrappingController := catalogcontroller.NewScrappingController(scrappingService)
 	authController := authcontroller.NewAuthController(authService)
 
 	// REST Licores
@@ -60,13 +66,18 @@ func (r *router) buildRoutes() {
 	r.eng.PUT("/recipes/:id", catalogController.UpdateRecipe())
 	r.eng.DELETE("/recipes/:id", catalogController.DeleteRecipe())
 
+	// REST AI & Scrapping
+	r.eng.POST("/processStrings", aiController.ProcessStrings())
+	r.eng.POST("/createAIRecipe", aiController.CreateRecipe())
+	r.eng.GET("/product/:code", scrappingController.GetProductByCode())
+
 	// REST Auth
 	r.eng.GET("/verify", authController.Verify())
 	r.eng.POST("/register", authController.Register())
 	r.eng.POST("/login", authController.Login())
 
 	// GraphQL Config
-	schema, err := graphql.NewSchema(graph.NewSchema(catalogService, authService))
+	schema, err := graphql.NewSchema(graph.NewSchema(catalogService, authService, scrappingService, aiService))
 	if err != nil {
 		panic(err)
 	}

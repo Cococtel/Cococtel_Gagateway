@@ -7,7 +7,12 @@ import (
 	"github.com/graphql-go/graphql"
 )
 
-func NewSchema(catalogService catalogservice.ICatalog, authService authservice.IAuth) graphql.SchemaConfig {
+func NewSchema(
+	catalogService catalogservice.ICatalog,
+	authService authservice.IAuth,
+	scrappingService catalogservice.IScrapping,
+	aiService catalogservice.IAI,
+) graphql.SchemaConfig {
 	liquorType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Liquor",
 		Fields: graphql.Fields{
@@ -54,6 +59,35 @@ func NewSchema(catalogService catalogservice.ICatalog, authService authservice.I
 			"expiration":   &graphql.Field{Type: graphql.String},
 			"token":        &graphql.Field{Type: graphql.String},
 			"account_type": &graphql.Field{Type: graphql.String},
+		},
+	})
+
+	ingredientType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Ingredient",
+		Fields: graphql.Fields{
+			"name":     &graphql.Field{Type: graphql.String},
+			"quantity": &graphql.Field{Type: graphql.String},
+		},
+	})
+
+	aiRecipeType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "AIRecipe",
+		Fields: graphql.Fields{
+			"cocktailName": &graphql.Field{Type: graphql.String},
+			"ingredients":  &graphql.Field{Type: graphql.NewList(ingredientType)},
+			"steps":        &graphql.Field{Type: graphql.NewList(graphql.String)},
+			"observations": &graphql.Field{Type: graphql.String},
+		},
+	})
+
+	productType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "Product",
+		Fields: graphql.Fields{
+			"name":                  &graphql.Field{Type: graphql.String},
+			"photo_link":            &graphql.Field{Type: graphql.String},
+			"description":           &graphql.Field{Type: graphql.String},
+			"additional_attributes": &graphql.Field{Type: graphql.String},
+			"isbn":                  &graphql.Field{Type: graphql.String},
 		},
 	})
 
@@ -117,6 +151,30 @@ func NewSchema(catalogService catalogservice.ICatalog, authService authservice.I
 		Name: "VerifyResponse",
 		Fields: graphql.Fields{
 			"data":  &graphql.Field{Type: graphql.String},
+			"error": &graphql.Field{Type: errorType},
+		},
+	})
+
+	stringProcessResponseType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "StringProcessResponse",
+		Fields: graphql.Fields{
+			"data":  &graphql.Field{Type: graphql.String},
+			"error": &graphql.Field{Type: errorType},
+		},
+	})
+
+	aiRecipeResponseType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "AIRecipeResponse",
+		Fields: graphql.Fields{
+			"data":  &graphql.Field{Type: aiRecipeType},
+			"error": &graphql.Field{Type: errorType},
+		},
+	})
+
+	productResponseType := graphql.NewObject(graphql.ObjectConfig{
+		Name: "ProductResponse",
+		Fields: graphql.Fields{
+			"data":  &graphql.Field{Type: productType},
 			"error": &graphql.Field{Type: errorType},
 		},
 	})
@@ -209,6 +267,29 @@ func NewSchema(catalogService catalogservice.ICatalog, authService authservice.I
 					}
 					return map[string]interface{}{
 						"data":  "ok",
+						"error": nil,
+					}, nil
+				},
+			},
+			"getProductByCode": &graphql.Field{
+				Type: productResponseType,
+				Args: graphql.FieldConfigArgument{
+					"code": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				},
+				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+					code := params.Args["code"].(string)
+					product, apiErr := scrappingService.GetProductByCode(code)
+					if apiErr != nil {
+						return map[string]interface{}{
+							"data": nil,
+							"error": map[string]interface{}{
+								"message": apiErr.Message().Error(),
+								"status":  apiErr.Status(),
+							},
+						}, nil
+					}
+					return map[string]interface{}{
+						"data":  product,
 						"error": nil,
 					}, nil
 				},
@@ -473,13 +554,13 @@ func NewSchema(catalogService catalogservice.ICatalog, authService authservice.I
 					"type":     &graphql.ArgumentConfig{Type: graphql.String},
 				},
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-					credentials := dtos.Login{
+					credentails := dtos.Login{
 						User:     params.Args["user"].(*string),
 						Password: params.Args["password"].(*string),
 						Type:     params.Args["type"].(*string),
 					}
 
-					loginResponse, apiErr := authService.Login(credentials)
+					loginResponse, apiErr := authService.Login(credentails)
 					if apiErr != nil {
 						return map[string]interface{}{
 							"data": nil,
@@ -491,6 +572,68 @@ func NewSchema(catalogService catalogservice.ICatalog, authService authservice.I
 					}
 					return map[string]interface{}{
 						"data":  loginResponse,
+						"error": nil,
+					}, nil
+				},
+			},
+			"processStrings": &graphql.Field{
+				Type: stringProcessResponseType,
+				Args: graphql.FieldConfigArgument{
+					"input": &graphql.ArgumentConfig{Type: graphql.NewList(graphql.String)},
+				},
+				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+					rawInput, ok := params.Args["input"].([]interface{})
+					if !ok {
+						return map[string]interface{}{
+							"data": nil,
+							"error": map[string]interface{}{
+								"message": "Invalid input format",
+								"status":  400,
+							},
+						}, nil
+					}
+					var input []string
+					for _, item := range rawInput {
+						if str, isString := item.(string); isString {
+							input = append(input, str)
+						}
+					}
+					result, apiErr := aiService.ProcessStrings(input)
+					if apiErr != nil {
+						return map[string]interface{}{
+							"data": nil,
+							"error": map[string]interface{}{
+								"message": apiErr.Message().Error(),
+								"status":  apiErr.Status(),
+							},
+						}, nil
+					}
+
+					return map[string]interface{}{
+						"data":  result,
+						"error": nil,
+					}, nil
+				},
+			},
+			"createAIRecipe": &graphql.Field{
+				Type: aiRecipeResponseType,
+				Args: graphql.FieldConfigArgument{
+					"liquor": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				},
+				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+					liquor := params.Args["liquor"].(string)
+					recipe, apiErr := aiService.CreateRecipe(liquor)
+					if apiErr != nil {
+						return map[string]interface{}{
+							"data": nil,
+							"error": map[string]interface{}{
+								"message": apiErr.Message().Error(),
+								"status":  apiErr.Status(),
+							},
+						}, nil
+					}
+					return map[string]interface{}{
+						"data":  recipe,
 						"error": nil,
 					}, nil
 				},
