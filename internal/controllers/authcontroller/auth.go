@@ -25,11 +25,11 @@ func NewAuthController(authservice authservice.IAuth) IAuth {
 
 func (a *authController) Verify() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		token := ctx.GetHeader("x-tiger-token")
+		token := ctx.GetHeader("x-auth-token")
 		if token == "" {
 			utils.Response(ctx, http.StatusUnauthorized, map[string]interface{}{
 				"data":  nil,
-				"error": map[string]interface{}{"message": "Token requerido", "status": http.StatusUnauthorized},
+				"error": map[string]interface{}{"message": "invalid x-auth-token", "status": http.StatusUnauthorized},
 			})
 			return
 		}
@@ -44,7 +44,7 @@ func (a *authController) Verify() gin.HandlerFunc {
 		}
 
 		utils.Response(ctx, http.StatusOK, map[string]interface{}{
-			"data":  "Verificación exitosa",
+			"data":  "successfully verify",
 			"error": nil,
 		})
 	}
@@ -56,7 +56,7 @@ func (a *authController) Register() gin.HandlerFunc {
 		if err := ctx.ShouldBindJSON(&user); err != nil {
 			utils.Response(ctx, http.StatusBadRequest, map[string]interface{}{
 				"data":  nil,
-				"error": map[string]interface{}{"message": "Datos inválidos", "status": http.StatusBadRequest},
+				"error": map[string]interface{}{"message": "invalid data", "status": http.StatusBadRequest},
 			})
 			return
 		}
@@ -83,7 +83,7 @@ func (a *authController) Login() gin.HandlerFunc {
 		if err := ctx.ShouldBindJSON(&credentails); err != nil {
 			utils.Response(ctx, http.StatusBadRequest, map[string]interface{}{
 				"data":  nil,
-				"error": map[string]interface{}{"message": "Datos inválidos", "status": http.StatusBadRequest},
+				"error": map[string]interface{}{"message": "invalid data", "status": http.StatusBadRequest},
 			})
 			return
 		}

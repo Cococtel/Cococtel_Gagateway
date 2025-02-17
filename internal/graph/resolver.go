@@ -336,6 +336,7 @@ func NewSchema(
 			"updateLiquor": &graphql.Field{
 				Type: liquorResponseType,
 				Args: graphql.FieldConfigArgument{
+					"_id":                   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 					"name":                  &graphql.ArgumentConfig{Type: graphql.String},
 					"EAN":                   &graphql.ArgumentConfig{Type: graphql.Int},
 					"category":              &graphql.ArgumentConfig{Type: graphql.String},
@@ -530,14 +531,14 @@ func NewSchema(
 				},
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 					user := dtos.Register{
-						Name:     params.Args["name"].(*string),
-						Lastname: params.Args["lastname"].(*string),
-						Phone:    params.Args["phone"].(*string),
-						Email:    params.Args["email"].(*string),
-						Image:    params.Args["image"].(*string),
-						Username: params.Args["username"].(*string),
-						Password: params.Args["password"].(*string),
-						Type:     params.Args["type"].(*string),
+						Name:     stringToPointer(params.Args["name"].(string)),
+						Lastname: stringToPointer(params.Args["lastname"].(string)),
+						Phone:    stringToPointer(params.Args["phone"].(string)),
+						Email:    stringToPointer(params.Args["email"].(string)),
+						Image:    stringToPointer(params.Args["image"].(string)),
+						Username: stringToPointer(params.Args["username"].(string)),
+						Password: stringToPointer(params.Args["password"].(string)),
+						Type:     stringToPointer(params.Args["type"].(string)),
 					}
 					newUser, apiErr := authService.Register(user)
 					if apiErr != nil {
@@ -554,13 +555,22 @@ func NewSchema(
 					"type":     &graphql.ArgumentConfig{Type: graphql.String},
 				},
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-					credentails := dtos.Login{
-						User:     params.Args["user"].(*string),
-						Password: params.Args["password"].(*string),
-						Type:     params.Args["type"].(*string),
+
+					user := stringToPointer(params.Args["user"].(string))
+					password := stringToPointer(params.Args["password"].(string))
+
+					var accountType *string
+					if params.Args["type"] != nil {
+						accountType = stringToPointer(params.Args["type"].(string))
 					}
 
-					loginResponse, apiErr := authService.Login(credentails)
+					credentials := dtos.Login{
+						User:     user,
+						Password: password,
+						Type:     accountType,
+					}
+
+					loginResponse, apiErr := authService.Login(credentials)
 					if apiErr != nil {
 						return map[string]interface{}{
 							"data": nil,
@@ -642,4 +652,11 @@ func NewSchema(
 	})
 
 	return graphql.SchemaConfig{Query: queryType, Mutation: mutationType}
+}
+
+func stringToPointer(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }

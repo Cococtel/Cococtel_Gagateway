@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/Cococtel/Cococtel_Gagateway/internal/domain/dtos"
 	"github.com/Cococtel/Cococtel_Gagateway/internal/domain/entities"
+	"io/ioutil"
 	"net/http"
 	"os"
 )
@@ -28,8 +29,8 @@ func NewAuthRepository() IAuth {
 }
 
 func (r *authRepository) Verify(token string) error {
-	url := fmt.Sprintf("%s/verify", ms_authorization_endpoint)
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	url := fmt.Sprintf("%s/v1/verify", ms_authorization_endpoint)
+	req, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
 		return err
 	}
@@ -59,12 +60,17 @@ func (r *authRepository) Register(user dtos.Register) (*entities.User, error) {
 	}
 	defer resp.Body.Close()
 
-	var registeredUser entities.User
-	if err := json.NewDecoder(resp.Body).Decode(&registeredUser); err != nil {
+	responseBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
 		return nil, err
 	}
 
-	return &registeredUser, nil
+	var userResp entities.UserResponse
+	if err := json.Unmarshal(responseBody, &userResp); err != nil {
+		return nil, err
+	}
+
+	return &userResp.Data, nil
 }
 
 func (r *authRepository) Login(credentails dtos.Login) (*entities.SuccessfulLogin, error) {
@@ -77,10 +83,15 @@ func (r *authRepository) Login(credentails dtos.Login) (*entities.SuccessfulLogi
 	}
 	defer resp.Body.Close()
 
-	var loginResponse entities.SuccessfulLogin
-	if err := json.NewDecoder(resp.Body).Decode(&loginResponse); err != nil {
+	responseBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
 		return nil, err
 	}
 
-	return &loginResponse, nil
+	var loginResp entities.LoginResponse
+	if err := json.Unmarshal(responseBody, &loginResp); err != nil {
+		return nil, err
+	}
+
+	return &loginResp.Data, nil
 }

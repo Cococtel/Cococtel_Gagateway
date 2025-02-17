@@ -19,4 +19,12 @@ type (
 		Token       string `json:"token,omitempty"`
 		AccountType string `json:"account_type,omitempty"`
 	}
+
+	UserResponse struct {
+		Data User `json:"data"`
+	}
+
+	LoginResponse struct {
+		Data SuccessfulLogin `json:"data"`
+	}
 )
