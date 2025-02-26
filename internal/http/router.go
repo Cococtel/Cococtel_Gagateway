@@ -10,8 +10,10 @@ import (
 	"github.com/Cococtel/Cococtel_Gagateway/internal/middleware"
 	"github.com/Cococtel/Cococtel_Gagateway/internal/repository/authrepository"
 	"github.com/Cococtel/Cococtel_Gagateway/internal/repository/catalogrepository"
+	"github.com/Cococtel/Cococtel_Gagateway/internal/repository/postrepository"
 	"github.com/Cococtel/Cococtel_Gagateway/internal/services/authservice"
 	"github.com/Cococtel/Cococtel_Gagateway/internal/services/catalogservice"
+	"github.com/Cococtel/Cococtel_Gagateway/internal/services/postservice"
 	"github.com/gin-gonic/gin"
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
@@ -41,16 +43,19 @@ func (r *router) buildRoutes() {
 	aiRepository := catalogrepository.NewAIRepository()
 	scrappingRepository := catalogrepository.NewScrappingRepository()
 	authRepository := authrepository.NewAuthRepository()
+	postsRepository := postrepository.NewCatalogRepository()
 
 	catalogService := catalogservice.NewCatalogService(catalogRepository)
 	aiService := catalogservice.NewAIService(aiRepository)
 	scrappingService := catalogservice.NewScrappingService(scrappingRepository)
 	authService := authservice.NewAuthService(authRepository)
+	postsService := postservice.NewPostsService(postsRepository)
 
 	catalogController := catalogcontroller.NewLiquorController(catalogService)
 	aiController := catalogcontroller.NewAIController(aiService)
 	scrappingController := catalogcontroller.NewScrappingController(scrappingService)
 	authController := authcontroller.NewAuthController(authService)
+	//postController := postcontroller.NewPostsController(postsService)
 
 	// REST Licores
 	r.eng.GET("/liquors", catalogController.GetLiquors())
@@ -77,7 +82,7 @@ func (r *router) buildRoutes() {
 	r.eng.POST("/login", authController.Login())
 
 	// GraphQL Config
-	schema, err := graphql.NewSchema(graph.NewSchema(catalogService, authService, scrappingService, aiService))
+	schema, err := graphql.NewSchema(graph.NewSchema(catalogService, authService, scrappingService, aiService, postsService))
 	if err != nil {
 		panic(err)
 	}

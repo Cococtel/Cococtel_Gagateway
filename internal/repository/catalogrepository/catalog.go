@@ -137,6 +137,10 @@ func (cr *catalogRepository) FetchRecipes() ([]entities.Recipe, error) {
 		return nil, err
 	}
 
+	for i := range recipes {
+		recipes[i].Rating, recipes[i].AverageRating = calculateAverageRating(recipes[i].Ratings)
+	}
+
 	return recipes, nil
 }
 
@@ -152,6 +156,9 @@ func (cr *catalogRepository) FetchRecipeByID(id string) (*entities.Recipe, error
 	if err := json.NewDecoder(resp.Body).Decode(&recipe); err != nil {
 		return nil, err
 	}
+
+	// Calcular rating y averageRating
+	recipe.Rating, recipe.AverageRating = calculateAverageRating(recipe.Ratings)
 
 	return &recipe, nil
 }
@@ -206,4 +213,19 @@ func (cr *catalogRepository) DeleteRecipe(id string) error {
 	defer resp.Body.Close()
 
 	return nil
+}
+
+// 📌 Función para calcular rating y averageRating
+func calculateAverageRating(ratings []entities.Rating) (float64, float64) {
+	if len(ratings) == 0 {
+		return 0, 0
+	}
+
+	var sum float64
+	for _, r := range ratings {
+		sum += r.Rating
+	}
+
+	average := sum / float64(len(ratings))
+	return sum, average
 }

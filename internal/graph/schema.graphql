@@ -7,14 +7,41 @@ type Liquor {
     additional_attributes: String!
 }
 
+type Ingredient {
+    _id: ID!
+    name: String!
+    quantity: String!
+}
+
+type Rating {
+    user_id: ID!
+    rating: Float!
+}
+
 type Recipe {
     _id: ID!
     name: String!
-    ingredients: [String!]!
-    instructions: String!
     category: String!
-    createdAt: String!
+    ingredients: [Ingredient!]!
+    instructions: [String!]!
+    creatorId: ID!
+    rating: Float!
+    likes: Int!
     liquors: [String!]!
+    createdAt: String!
+    ratings: [Rating!]!
+    description: String!
+    averageRating: Float!
+}
+
+type RecipeResponse {
+    data: Recipe
+    error: Error
+}
+
+type RecipesResponse {
+    data: [Recipe!]
+    error: Error
 }
 
 type User {
@@ -22,9 +49,9 @@ type User {
     name: String!
     lastname: String!
     email: String!
-    country: String!
     phone: String!
     image: String!
+    username: String!
 }
 
 type SuccessfulLogin {
@@ -34,11 +61,6 @@ type SuccessfulLogin {
     expiration: String!
     token: String!
     account_type: String!
-}
-
-type Ingredient {
-    name: String!
-    quantity: String!
 }
 
 type AIRecipe {
@@ -56,6 +78,23 @@ type Product {
     isbn: String!
 }
 
+type Interaction {
+    type: Int!
+    value: String!
+    userId: String!
+    createdAt: String!
+}
+
+type Post {
+    _id: ID!
+    urlImage: String!
+    title: String!
+    content: String!
+    author: String!
+    createdAt: String!
+    interactions: [Interaction!]!
+}
+
 type Error {
     message: String!
     status: Int!
@@ -71,6 +110,11 @@ type DeleteRecipeResponse {
     error: Error
 }
 
+type DeletePostResponse {
+    data: String
+    error: Error
+}
+
 type LiquorResponse {
     data: Liquor
     error: Error
@@ -78,16 +122,6 @@ type LiquorResponse {
 
 type LiquorsResponse {
     data: [Liquor!]
-    error: Error
-}
-
-type RecipeResponse {
-    data: Recipe
-    error: Error
-}
-
-type RecipesResponse {
-    data: [Recipe!]
     error: Error
 }
 
@@ -121,6 +155,40 @@ type ProductResponse {
     error: Error
 }
 
+type PostResponse {
+    data: Post
+    error: Error
+}
+
+type PostsResponse {
+    data: [Post!]
+    error: Error
+}
+
+input UserInput {
+    name: String
+    lastname: String
+    phone: String
+    email: String
+    username: String
+    image: String
+}
+
+type EditProfileResponse {
+    data: String
+    error: Error
+}
+
+type ImageTextResponse {
+    data: [String!]
+    error: Error
+}
+
+input IngredientInput {
+    name: String!
+    quantity: String!
+}
+
 type Query {
     liquors: LiquorsResponse
     liquor(_id: ID!): LiquorResponse
@@ -131,6 +199,11 @@ type Query {
     verify(token: String!): VerifyResponse
 
     getProductByCode(code: String!): ProductResponse
+
+    getUser(id: String!, token: String!): UserResponse
+
+    posts: PostsResponse
+    post(_id: ID!): PostResponse
 }
 
 type Mutation {
@@ -138,13 +211,19 @@ type Mutation {
     updateLiquor(_id: ID!, name: String, EAN: Int, category: String, description: String, additional_attributes: String): LiquorResponse
     deleteLiquor(_id: ID!): DeleteLiquorResponse
 
-    createRecipe(name: String!, ingredients: [String!]!, instructions: String!, category: String!, liquors: [String!]!): RecipeResponse
-    updateRecipe(_id: ID!, name: String, ingredients: [String!], instructions: String, category: String, liquors: [String!]): RecipeResponse
-    deleteRecipe(_id: ID!): DeleteRecipeResponse
+    createRecipe(name: String!, category: String!, ingredients: [IngredientInput!]!, instructions: [String!]!, creatorId: ID!, description: String!): RecipeResponse
+    updateRecipe(_id: ID!, name: String, category: String, ingredients: [IngredientInput!], instructions: [String!], description: String): RecipeResponse
+    deleteRecipe(_id: ID!): Boolean
 
     register(name: String!, lastname: String, phone: String, email: String!, image: String, username: String, password: String!, type: String): UserResponse
     login(user: String!, password: String!, type: String): LoginResponse
-    
+    editProfile(user: UserInput, token: String!): EditProfileResponse
+
     processStrings(input: [String!]!): StringProcessResponse
     createAIRecipe(liquor: String!): AIRecipeResponse
+    extractTextFromImageBytes(imageBase64: String!): ImageTextResponse
+
+    createPost(urlImage: String, title: String!, content: String!, author: String!): PostResponse
+    updatePost(_id: ID!, urlImage: String, title: String, content: String, author: String): PostResponse
+    deletePost(_id: ID!): DeletePostResponse
 }

@@ -14,6 +14,8 @@ type (
 		Verify(token string) utils.ApiError
 		Register(user dtos.Register) (*entities.User, utils.ApiError)
 		Login(credentails dtos.Login) (*entities.SuccessfulLogin, utils.ApiError)
+		GetUser(id string, token string) (*entities.User, utils.ApiError)
+		EditProfile(user dtos.User, token string) utils.ApiError
 	}
 	authService struct {
 		authRepo authrepository.IAuth
@@ -46,4 +48,21 @@ func (s *authService) Login(credentails dtos.Login) (*entities.SuccessfulLogin, 
 		return nil, utils.NewApiError(errors.New("login error"), http.StatusInternalServerError)
 	}
 	return loginResponse, nil
+}
+
+func (s *authService) GetUser(id string, token string) (*entities.User, utils.ApiError) {
+	user, err := s.authRepo.GetUser(id, token)
+	user.UserID = id
+	if err != nil {
+		return nil, utils.NewApiError(errors.New("getting user error"), http.StatusInternalServerError)
+	}
+	return user, nil
+}
+
+func (s *authService) EditProfile(user dtos.User, token string) utils.ApiError {
+	err := s.authRepo.EditUser(user, token)
+	if err != nil {
+		return utils.NewApiError(errors.New("editing user error"), http.StatusInternalServerError)
+	}
+	return nil
 }

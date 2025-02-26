@@ -124,45 +124,17 @@ func (cs *catalogService) CreateRecipe(recipe dtos.Recipe) (*entities.Recipe, ut
 }
 
 func (cs *catalogService) UpdateRecipe(id string, updates map[string]interface{}) (*entities.Recipe, utils.ApiError) {
-	currentRecipe, apiErr := cs.catalogRepository.FetchRecipeByID(id)
-	if apiErr != nil {
-		return nil, utils.NewApiError(apiErr, http.StatusNotFound)
-	}
-
-	updatedFields := make(map[string]interface{})
-
-	if name, exists := updates["name"]; exists && name != currentRecipe.Name {
-		updatedFields["name"] = name
-	}
-	if ingredients, exists := updates["ingredients"]; exists {
-		updatedFields["ingredients"] = ingredients
-	}
-	if instructions, exists := updates["instructions"]; exists && instructions != currentRecipe.Instructions {
-		updatedFields["instructions"] = instructions
-	}
-	if category, exists := updates["category"]; exists && category != currentRecipe.Category {
-		updatedFields["category"] = category
-	}
-	if liquors, exists := updates["liquors"]; exists {
-		updatedFields["liquors"] = liquors
-	}
-
-	if len(updatedFields) == 0 {
-		return currentRecipe, nil
-	}
-
-	updatedRecipe, err := cs.catalogRepository.UpdateRecipe(id, updatedFields)
+	updatedRecipe, err := cs.catalogRepository.UpdateRecipe(id, updates)
 	if err != nil {
 		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
-
 	return updatedRecipe, nil
 }
 
 func (cs *catalogService) DeleteRecipe(id string) utils.ApiError {
 	err := cs.catalogRepository.DeleteRecipe(id)
 	if err != nil {
-		return utils.NewApiError(errors.New("error al eliminar receta"), http.StatusInternalServerError)
+		return utils.NewApiError(errors.New("error deleting recipe"), http.StatusInternalServerError)
 	}
 	return nil
 }

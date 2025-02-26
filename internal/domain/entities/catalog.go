@@ -10,14 +10,31 @@ type (
 		AdditionalAttributes string `json:"additional_attributes,omitempty"`
 	}
 
+	Ingredient struct {
+		ID       string `json:"_id,omitempty"`
+		Name     string `json:"name"`
+		Quantity string `json:"quantity"`
+	}
+
+	Rating struct {
+		UserID string  `json:"user_id"`
+		Rating float64 `json:"rating"`
+	}
+
 	Recipe struct {
-		ID           string   `json:"_id"`
-		Name         string   `json:"name,omitempty"`
-		Ingredients  []string `json:"ingredients,omitempty"`
-		Instructions string   `json:"instructions,omitempty"`
-		Category     string   `json:"category,omitempty"`
-		CreatedAt    string   `json:"createdAt,omitempty"`
-		Liquors      []string `json:"liquors,omitempty"`
+		ID            string       `json:"_id"`
+		Name          string       `json:"name"`
+		Category      string       `json:"category"`
+		Ingredients   []Ingredient `json:"ingredients"`
+		Instructions  []string     `json:"instructions"`
+		CreatorId     string       `json:"creatorId"`
+		Rating        float64      `json:"rating"`
+		Likes         int          `json:"likes"`
+		Liquors       []string     `json:"liquors"`
+		CreatedAt     string       `json:"createdAt"`
+		Ratings       []Rating     `json:"ratings"`
+		Description   string       `json:"description"`
+		AverageRating float64      `json:"averageRating"`
 	}
 
 	AIRecipe struct {
@@ -25,11 +42,6 @@ type (
 		Ingredients  []Ingredient `json:"ingredients"`
 		Steps        []string     `json:"steps"`
 		Observations string       `json:"observations"`
-	}
-
-	Ingredient struct {
-		Name     string `json:"name"`
-		Quantity string `json:"quantity"`
 	}
 
 	Product struct {

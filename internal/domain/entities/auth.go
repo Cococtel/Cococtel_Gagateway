@@ -9,6 +9,7 @@ type (
 		Country  string `json:"country,omitempty"`
 		Phone    string `json:"phone,omitempty"`
 		Image    string `json:"image,omitempty"`
+		Username string `json:"username,omitempty"`
 	}
 
 	SuccessfulLogin struct {

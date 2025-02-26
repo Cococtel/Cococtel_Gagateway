@@ -4,6 +4,7 @@ import (
 	"github.com/Cococtel/Cococtel_Gagateway/internal/services/catalogservice"
 	"github.com/Cococtel/Cococtel_Gagateway/internal/utils"
 	"github.com/gin-gonic/gin"
+	"io/ioutil"
 	"net/http"
 )
 
@@ -70,6 +71,52 @@ func (ai *aiController) CreateRecipe() gin.HandlerFunc {
 
 		utils.Response(ctx, http.StatusOK, map[string]interface{}{
 			"data":  recipe,
+			"error": nil,
+		})
+	}
+}
+
+func (ai *aiController) ExtractText() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		file, _, err := ctx.Request.FormFile("imageFile")
+		if err != nil {
+			utils.Response(ctx, http.StatusBadRequest, map[string]interface{}{
+				"data": nil,
+				"error": map[string]interface{}{
+					"message": "invalid image file",
+					"status":  http.StatusBadRequest,
+				},
+			})
+			return
+		}
+		defer file.Close()
+
+		imageBytes, err := ioutil.ReadAll(file)
+		if err != nil {
+			utils.Response(ctx, http.StatusInternalServerError, map[string]interface{}{
+				"data": nil,
+				"error": map[string]interface{}{
+					"message": "error reading image file",
+					"status":  http.StatusInternalServerError,
+				},
+			})
+			return
+		}
+
+		texts, apiErr := ai.aiService.ExtractTextFromImage(imageBytes)
+		if apiErr != nil {
+			utils.Response(ctx, apiErr.Status(), map[string]interface{}{
+				"data": nil,
+				"error": map[string]interface{}{
+					"message": apiErr.Message().Error(),
+					"status":  apiErr.Status(),
+				},
+			})
+			return
+		}
+
+		utils.Response(ctx, http.StatusOK, map[string]interface{}{
+			"data":  texts,
 			"error": nil,
 		})
 	}

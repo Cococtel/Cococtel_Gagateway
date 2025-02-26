@@ -2,7 +2,7 @@
 FROM golang:1.23
 
 # Establecemos el directorio de trabajo dentro del contenedor
-WORKDIR /app
+WORKDIR /gateway
 
 # Copaimos los archivos del módulo Go y descargamos las dependencais
 COPY go.mod .

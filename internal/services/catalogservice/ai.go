@@ -12,6 +12,7 @@ type (
 	IAI interface {
 		ProcessStrings(input []string) (string, utils.ApiError)
 		CreateRecipe(liquor string) (*entities.AIRecipe, utils.ApiError)
+		ExtractTextFromImage(imageBytes []byte) ([]string, utils.ApiError)
 	}
 	aiService struct {
 		aiRepository catalogrepository.IAI
@@ -36,4 +37,12 @@ func (is *aiService) CreateRecipe(liquor string) (*entities.AIRecipe, utils.ApiE
 		return nil, utils.NewApiError(errors.New("error generating recipe"), http.StatusInternalServerError)
 	}
 	return recipe, nil
+}
+
+func (is *aiService) ExtractTextFromImage(imageBytes []byte) ([]string, utils.ApiError) {
+	texts, err := is.aiRepository.ExtractTextFromImage(imageBytes)
+	if err != nil {
+		return nil, utils.NewApiError(errors.New("error extracting text from image"), http.StatusInternalServerError)
+	}
+	return texts, nil
 }

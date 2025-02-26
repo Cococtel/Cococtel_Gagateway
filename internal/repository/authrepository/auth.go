@@ -17,6 +17,8 @@ type (
 		Verify(token string) error
 		Register(user dtos.Register) (*entities.User, error)
 		Login(credentails dtos.Login) (*entities.SuccessfulLogin, error)
+		GetUser(id string, token string) (*entities.User, error)
+		EditUser(user dtos.User, token string) error
 	}
 	authRepository struct{}
 )
@@ -94,4 +96,56 @@ func (r *authRepository) Login(credentails dtos.Login) (*entities.SuccessfulLogi
 	}
 
 	return &loginResp.Data, nil
+}
+
+func (r *authRepository) GetUser(id string, token string) (*entities.User, error) {
+	url := fmt.Sprintf("%s/v1/profile/%s", ms_authorization_endpoint, id)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("x-auth-token", token)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var response struct {
+		Data entities.User `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, err
+	}
+
+	if response.Data.Name == "" {
+		return nil, errors.New("user not found")
+	}
+
+	return &response.Data, nil
+}
+
+func (r *authRepository) EditUser(user dtos.User, token string) error {
+	url := fmt.Sprintf("%s/v1/profile", ms_authorization_endpoint)
+	body, _ := json.Marshal(user)
+	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("x-auth-token", token)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(resp.Status)
+	}
+
+	return nil
 }

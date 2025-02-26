@@ -17,4 +17,13 @@ type (
 		Password *string `json:"password,omitempty"`
 		Type     *string `json:"type,omitempty"`
 	}
+
+	User struct {
+		Name     *string `json:"name"`
+		Lastname *string `json:"lastname,omitempty"`
+		Phone    *string `json:"phone,omitempty"`
+		Email    *string `json:"email,omitempty"`
+		Username *string `json:"username,omitempty"`
+		Image    *string `json:"image,omitempty"`
+	}
 )
