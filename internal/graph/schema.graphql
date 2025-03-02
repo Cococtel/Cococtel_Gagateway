@@ -189,6 +189,12 @@ input IngredientInput {
     quantity: String!
 }
 
+input RatingInput {
+    user_id: ID!
+    rating: Float!
+}
+
+
 type Query {
     liquors: LiquorsResponse
     liquor(_id: ID!): LiquorResponse
@@ -212,7 +218,16 @@ type Mutation {
     deleteLiquor(_id: ID!): DeleteLiquorResponse
 
     createRecipe(name: String!, category: String!, ingredients: [IngredientInput!]!, instructions: [String!]!, creatorId: ID!, description: String!): RecipeResponse
-    updateRecipe(_id: ID!, name: String, category: String, ingredients: [IngredientInput!], instructions: [String!], description: String): RecipeResponse
+    updateRecipe(
+        _id: ID!,
+        name: String,
+        category: String,
+        ingredients: [IngredientInput!],
+        instructions: [String!],
+        description: String,
+        likes: Int,
+        ratings: [RatingInput!]
+    ): RecipeResponse
     deleteRecipe(_id: ID!): Boolean
 
     register(name: String!, lastname: String, phone: String, email: String!, image: String, username: String, password: String!, type: String): UserResponse

@@ -5,24 +5,29 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Cococtel/Cococtel_Gagateway/internal/domain/dtos"
-	"github.com/Cococtel/Cococtel_Gagateway/internal/domain/entities"
+	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
+
+	"github.com/Cococtel/Cococtel_Gagateway/internal/domain/dtos"
+	"github.com/Cococtel/Cococtel_Gagateway/internal/domain/entities"
+	"github.com/Cococtel/Cococtel_Gagateway/internal/utils"
 )
 
 type (
 	ICatalog interface {
-		FetchLiquors() ([]entities.Liquor, error)
-		FetchLiquorByID(id string) (*entities.Liquor, error)
-		CreateLiquor(liquor dtos.Liquor) (*entities.Liquor, error)
-		UpdateLiquor(id string, updates map[string]interface{}) (*entities.Liquor, error)
-		DeleteLiquor(id string) error
-		FetchRecipes() ([]entities.Recipe, error)
-		FetchRecipeByID(id string) (*entities.Recipe, error)
-		CreateRecipe(recipe dtos.Recipe) (*entities.Recipe, error)
-		UpdateRecipe(id string, updates map[string]interface{}) (*entities.Recipe, error)
-		DeleteRecipe(id string) error
+		FetchLiquors() ([]entities.Liquor, utils.ApiError)
+		FetchLiquorByID(id string) (*entities.Liquor, utils.ApiError)
+		CreateLiquor(liquor dtos.Liquor) (*entities.Liquor, utils.ApiError)
+		UpdateLiquor(id string, updates map[string]interface{}) (*entities.Liquor, utils.ApiError)
+		DeleteLiquor(id string) utils.ApiError
+		FetchRecipes() ([]entities.Recipe, utils.ApiError)
+		FetchRecipeByID(id string) (*entities.Recipe, utils.ApiError)
+		CreateRecipe(recipe dtos.Recipe) (*entities.Recipe, utils.ApiError)
+		UpdateRecipe(id string, updates map[string]interface{}) (*entities.Recipe, utils.ApiError)
+		DeleteRecipe(id string) utils.ApiError
 	}
 	catalogRepository struct{}
 )
@@ -34,62 +39,87 @@ func NewCatalogRepository() ICatalog {
 	return &catalogRepository{}
 }
 
-func (cr *catalogRepository) FetchLiquors() ([]entities.Liquor, error) {
+func (cr *catalogRepository) FetchLiquors() ([]entities.Liquor, utils.ApiError) {
+	start := time.Now()
 	resp, err := http.Get(ms_catalog_endpoint + "/liquors")
 	if err != nil {
-		return nil, err
+		log.Println(err)
+		utils.MeasureRequest("catalog", "FetchLiquors", start, resp.StatusCode, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
 	defer resp.Body.Close()
 
 	var liquors []entities.Liquor
 	if err := json.NewDecoder(resp.Body).Decode(&liquors); err != nil {
-		return nil, err
+		utils.MeasureRequest("catalog", "FetchLiquors", start, resp.StatusCode, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
 
-	if len(liquors) == 0 {
-		return nil, errors.New("liquors not found")
+	if resp.StatusCode > http.StatusMultipleChoices {
+		log.Println(resp.Body)
+		utils.MeasureRequest("catalog", "FetchLiquors", start, resp.StatusCode, errors.New("status code "+strconv.Itoa(resp.StatusCode)))
+		return nil, utils.NewApiError(errors.New("error getting liquors"), resp.StatusCode)
 	}
 
+	utils.MeasureRequest("catalog", "FetchLiquors", start, resp.StatusCode, nil)
 	return liquors, nil
 }
 
-func (cr *catalogRepository) FetchLiquorByID(id string) (*entities.Liquor, error) {
+func (cr *catalogRepository) FetchLiquorByID(id string) (*entities.Liquor, utils.ApiError) {
+	start := time.Now()
 	url := fmt.Sprintf("%s/liquors/%s", ms_catalog_endpoint, id)
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil, err
+		log.Println(err)
+		utils.MeasureRequest("catalog", "FetchLiquorByID", start, resp.StatusCode, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
 	defer resp.Body.Close()
 
 	var liquor entities.Liquor
 	if err := json.NewDecoder(resp.Body).Decode(&liquor); err != nil {
-		return nil, err
+		utils.MeasureRequest("catalog", "FetchLiquorByID", start, resp.StatusCode, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
 
-	if liquor.ID == "" {
-		return nil, errors.New("liquor not found")
+	if resp.StatusCode > http.StatusMultipleChoices {
+		log.Println(resp.Body)
+		utils.MeasureRequest("catalog", "FetchLiquorByID", start, resp.StatusCode, errors.New(http.StatusText(resp.StatusCode)))
+		return nil, utils.NewApiError(errors.New("error getting liquor"), resp.StatusCode)
 	}
-
+	utils.MeasureRequest("catalog", "FetchLiquorByID", start, resp.StatusCode, nil)
 	return &liquor, nil
 }
 
-func (cr *catalogRepository) CreateLiquor(liquor dtos.Liquor) (*entities.Liquor, error) {
+func (cr *catalogRepository) CreateLiquor(liquor dtos.Liquor) (*entities.Liquor, utils.ApiError) {
+	start := time.Now()
 	body, _ := json.Marshal(liquor)
 	resp, err := http.Post(ms_catalog_endpoint+"/liquors", "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		return nil, err
+		log.Println(err)
+		utils.MeasureRequest("catalog", "CreateLiquor", start, resp.StatusCode, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
 	defer resp.Body.Close()
 
 	var newLiquor entities.Liquor
 	if err := json.NewDecoder(resp.Body).Decode(&newLiquor); err != nil {
-		return nil, err
+		utils.MeasureRequest("catalog", "CreateLiquor", start, resp.StatusCode, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
 
+	if resp.StatusCode > http.StatusMultipleChoices {
+		log.Println(resp.Body)
+		utils.MeasureRequest("catalog", "CreateLiquor", start, resp.StatusCode, errors.New(http.StatusText(resp.StatusCode)))
+		return nil, utils.NewApiError(errors.New(http.StatusText(resp.StatusCode)), resp.StatusCode)
+	}
+
+	utils.MeasureRequest("catalog", "CreateLiquor", start, resp.StatusCode, nil)
 	return &newLiquor, nil
 }
 
-func (cr *catalogRepository) UpdateLiquor(id string, updates map[string]interface{}) (*entities.Liquor, error) {
+func (cr *catalogRepository) UpdateLiquor(id string, updates map[string]interface{}) (*entities.Liquor, utils.ApiError) {
+	start := time.Now()
 	url := fmt.Sprintf("%s/liquors/%s", ms_catalog_endpoint, id)
 	body, _ := json.Marshal(updates)
 
@@ -99,133 +129,198 @@ func (cr *catalogRepository) UpdateLiquor(id string, updates map[string]interfac
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		log.Println(err)
+		utils.MeasureRequest("catalog", "UpdateLiquor", start, resp.StatusCode, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
 	defer resp.Body.Close()
 
 	var updatedLiquor entities.Liquor
 	if err := json.NewDecoder(resp.Body).Decode(&updatedLiquor); err != nil {
-		return nil, err
+		utils.MeasureRequest("catalog", "UpdateLiquor", start, resp.StatusCode, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
 
+	if resp.StatusCode > http.StatusMultipleChoices {
+		log.Println(resp.Body)
+		utils.MeasureRequest("catalog", "UpdateLiquor", start, resp.StatusCode, errors.New(http.StatusText(resp.StatusCode)))
+		return nil, utils.NewApiError(errors.New(http.StatusText(resp.StatusCode)), resp.StatusCode)
+	}
+
+	utils.MeasureRequest("catalog", "UpdateLiquor", start, resp.StatusCode, nil)
 	return &updatedLiquor, nil
 }
 
-func (cr *catalogRepository) DeleteLiquor(id string) error {
+func (cr *catalogRepository) DeleteLiquor(id string) utils.ApiError {
+	start := time.Now()
 	url := fmt.Sprintf("%s/liquors/%s", ms_catalog_endpoint, id)
 
 	req, _ := http.NewRequest(http.MethodDelete, url, nil)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		log.Println(err)
+		utils.MeasureRequest("catalog", "DeleteLiquor", start, resp.StatusCode, err)
+		return utils.NewApiError(errors.New(http.StatusText(resp.StatusCode)), resp.StatusCode)
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode > http.StatusMultipleChoices {
+		log.Println(resp.Body)
+		utils.MeasureRequest("catalog", "DeleteLiquor", start, resp.StatusCode, errors.New(http.StatusText(resp.StatusCode)))
+		return utils.NewApiError(errors.New(http.StatusText(resp.StatusCode)), resp.StatusCode)
+	}
+	utils.MeasureRequest("catalog", "DeleteLiquor", start, resp.StatusCode, nil)
 	return nil
 }
 
-func (cr *catalogRepository) FetchRecipes() ([]entities.Recipe, error) {
+func (cr *catalogRepository) FetchRecipes() ([]entities.Recipe, utils.ApiError) {
+	start := time.Now()
 	resp, err := http.Get(ms_catalog_endpoint + "/recipes")
 	if err != nil {
-		return nil, err
+		log.Println(err)
+		utils.MeasureRequest("catalog", "FetchRecipes", start, resp.StatusCode, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
 	defer resp.Body.Close()
 
 	var recipes []entities.Recipe
 	if err := json.NewDecoder(resp.Body).Decode(&recipes); err != nil {
-		return nil, err
+		utils.MeasureRequest("catalog", "FetchRecipes", start, resp.StatusCode, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
 
-	for i := range recipes {
-		recipes[i].Rating, recipes[i].AverageRating = calculateAverageRating(recipes[i].Ratings)
+	if resp.StatusCode > http.StatusMultipleChoices {
+		log.Println(resp.Body)
+		utils.MeasureRequest("catalog", "FetchRecipes", start, resp.StatusCode, errors.New(http.StatusText(resp.StatusCode)))
+		return nil, utils.NewApiError(errors.New(http.StatusText(resp.StatusCode)), resp.StatusCode)
 	}
 
+	utils.MeasureRequest("catalog", "FetchRecipes", start, resp.StatusCode, nil)
 	return recipes, nil
 }
 
-func (cr *catalogRepository) FetchRecipeByID(id string) (*entities.Recipe, error) {
+func (cr *catalogRepository) FetchRecipeByID(id string) (*entities.Recipe, utils.ApiError) {
+	start := time.Now()
 	url := fmt.Sprintf("%s/recipes/%s", ms_catalog_endpoint, id)
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil, err
+		log.Println(err)
+		utils.MeasureRequest("catalog", "FetchRecipeByID", start, resp.StatusCode, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
 	defer resp.Body.Close()
 
 	var recipe entities.Recipe
 	if err := json.NewDecoder(resp.Body).Decode(&recipe); err != nil {
-		return nil, err
+		utils.MeasureRequest("catalog", "FetchRecipeByID", start, resp.StatusCode, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
 
-	// Calcular rating y averageRating
-	recipe.Rating, recipe.AverageRating = calculateAverageRating(recipe.Ratings)
+	if resp.StatusCode > http.StatusMultipleChoices {
+		log.Println(resp.Body)
+		utils.MeasureRequest("catalog", "FetchRecipeByID", start, resp.StatusCode, errors.New(http.StatusText(resp.StatusCode)))
+		return nil, utils.NewApiError(errors.New(http.StatusText(resp.StatusCode)), resp.StatusCode)
+	}
 
+	utils.MeasureRequest("catalog", "FetchRecipeByID", start, resp.StatusCode, nil)
 	return &recipe, nil
 }
 
-func (cr *catalogRepository) CreateRecipe(recipe dtos.Recipe) (*entities.Recipe, error) {
+func (cr *catalogRepository) CreateRecipe(recipe dtos.Recipe) (*entities.Recipe, utils.ApiError) {
+	start := time.Now()
 	body, _ := json.Marshal(recipe)
 	resp, err := http.Post(ms_catalog_endpoint+"/recipes", "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		return nil, err
+		log.Println(err)
+		utils.MeasureRequest("catalog", "CreateRecipe", start, resp.StatusCode, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
 	defer resp.Body.Close()
 
 	var newRecipe entities.Recipe
 	if err := json.NewDecoder(resp.Body).Decode(&newRecipe); err != nil {
-		return nil, err
+		utils.MeasureRequest("catalog", "CreateRecipe", start, resp.StatusCode, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
 
+	if resp.StatusCode > http.StatusMultipleChoices {
+		log.Println(resp.Body)
+		utils.MeasureRequest("catalog", "CreateRecipe", start, resp.StatusCode, errors.New(http.StatusText(resp.StatusCode)))
+		return nil, utils.NewApiError(errors.New(http.StatusText(resp.StatusCode)), resp.StatusCode)
+	}
+
+	utils.MeasureRequest("catalog", "CreateRecipe", start, resp.StatusCode, nil)
 	return &newRecipe, nil
 }
 
-func (cr *catalogRepository) UpdateRecipe(id string, updates map[string]interface{}) (*entities.Recipe, error) {
+func (cr *catalogRepository) UpdateRecipe(id string, updates map[string]interface{}) (*entities.Recipe, utils.ApiError) {
+	start := time.Now()
 	url := fmt.Sprintf("%s/recipes/%s", ms_catalog_endpoint, id)
-	body, _ := json.Marshal(updates)
 
-	req, _ := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(body))
+	// Convertir updates a JSON
+	body, err := json.Marshal(updates)
+	if err != nil {
+		log.Println("Error marshalling update data:", err)
+		utils.MeasureRequest("catalog", "UpdateRecipe", start, http.StatusInternalServerError, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
+	}
+
+	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(body))
+	if err != nil {
+		log.Println("Error creating HTTP request:", err)
+		utils.MeasureRequest("catalog", "UpdateRecipe", start, http.StatusInternalServerError, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
+	}
+
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		log.Println("HTTP request failed:", err)
+		utils.MeasureRequest("catalog", "UpdateRecipe", start, http.StatusInternalServerError, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
 	defer resp.Body.Close()
 
-	var updatedRecipe entities.Recipe
-	if err := json.NewDecoder(resp.Body).Decode(&updatedRecipe); err != nil {
-		return nil, err
+	// Manejo de errores HTTP
+	if resp.StatusCode >= http.StatusMultipleChoices {
+		log.Printf("UpdateRecipe failed with status %d\n", resp.StatusCode)
+		utils.MeasureRequest("catalog", "UpdateRecipe", start, resp.StatusCode, errors.New(http.StatusText(resp.StatusCode)))
+		return nil, utils.NewApiError(errors.New(http.StatusText(resp.StatusCode)), resp.StatusCode)
 	}
 
+	var updatedRecipe entities.Recipe
+	if err := json.NewDecoder(resp.Body).Decode(&updatedRecipe); err != nil {
+		log.Println("Error decoding response:", err)
+		utils.MeasureRequest("catalog", "UpdateRecipe", start, http.StatusInternalServerError, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
+	}
+
+	utils.MeasureRequest("catalog", "UpdateRecipe", start, resp.StatusCode, nil)
 	return &updatedRecipe, nil
 }
 
-func (cr *catalogRepository) DeleteRecipe(id string) error {
+func (cr *catalogRepository) DeleteRecipe(id string) utils.ApiError {
+	start := time.Now()
 	url := fmt.Sprintf("%s/recipes/%s", ms_catalog_endpoint, id)
 
 	req, _ := http.NewRequest(http.MethodDelete, url, nil)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		log.Println(err)
+		utils.MeasureRequest("catalog", "DeleteRecipe", start, resp.StatusCode, err)
+		return utils.NewApiError(err, http.StatusInternalServerError)
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode > http.StatusMultipleChoices {
+		log.Println(resp.Body)
+		utils.MeasureRequest("catalog", "DeleteRecipe", start, resp.StatusCode, errors.New(http.StatusText(resp.StatusCode)))
+		return utils.NewApiError(errors.New(http.StatusText(resp.StatusCode)), resp.StatusCode)
+	}
+	utils.MeasureRequest("catalog", "DeleteRecipe", start, resp.StatusCode, nil)
 	return nil
-}
-
-// 📌 Función para calcular rating y averageRating
-func calculateAverageRating(ratings []entities.Rating) (float64, float64) {
-	if len(ratings) == 0 {
-		return 0, 0
-	}
-
-	var sum float64
-	for _, r := range ratings {
-		sum += r.Rating
-	}
-
-	average := sum / float64(len(ratings))
-	return sum, average
 }

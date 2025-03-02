@@ -6,7 +6,7 @@ import (
 	"github.com/Cococtel/Cococtel_Gagateway/internal/domain/entities"
 	"github.com/Cococtel/Cococtel_Gagateway/internal/repository/authrepository"
 	"github.com/Cococtel/Cococtel_Gagateway/internal/utils"
-	"net/http"
+	"log"
 )
 
 type (
@@ -29,7 +29,8 @@ func NewAuthService(repo authrepository.IAuth) IAuth {
 func (s *authService) Verify(token string) utils.ApiError {
 	err := s.authRepo.Verify(token)
 	if err != nil {
-		return utils.NewApiError(errors.New("unauthorized"), http.StatusUnauthorized)
+		log.Println(err)
+		return utils.NewApiError(errors.New("unauthorized"), err.Status())
 	}
 	return nil
 }
@@ -37,7 +38,8 @@ func (s *authService) Verify(token string) utils.ApiError {
 func (s *authService) Register(user dtos.Register) (*entities.User, utils.ApiError) {
 	newUser, err := s.authRepo.Register(user)
 	if err != nil {
-		return nil, utils.NewApiError(errors.New("register error"), http.StatusInternalServerError)
+		log.Println(err)
+		return nil, utils.NewApiError(errors.New("register error"), err.Status())
 	}
 	return newUser, nil
 }
@@ -45,24 +47,27 @@ func (s *authService) Register(user dtos.Register) (*entities.User, utils.ApiErr
 func (s *authService) Login(credentails dtos.Login) (*entities.SuccessfulLogin, utils.ApiError) {
 	loginResponse, err := s.authRepo.Login(credentails)
 	if err != nil {
-		return nil, utils.NewApiError(errors.New("login error"), http.StatusInternalServerError)
+		log.Println(err)
+		return nil, utils.NewApiError(errors.New("login error"), err.Status())
 	}
 	return loginResponse, nil
 }
 
 func (s *authService) GetUser(id string, token string) (*entities.User, utils.ApiError) {
 	user, err := s.authRepo.GetUser(id, token)
-	user.UserID = id
 	if err != nil {
-		return nil, utils.NewApiError(errors.New("getting user error"), http.StatusInternalServerError)
+		log.Println(err)
+		return nil, utils.NewApiError(errors.New("getting user error"), err.Status())
 	}
+	user.UserID = id
 	return user, nil
 }
 
 func (s *authService) EditProfile(user dtos.User, token string) utils.ApiError {
 	err := s.authRepo.EditUser(user, token)
 	if err != nil {
-		return utils.NewApiError(errors.New("editing user error"), http.StatusInternalServerError)
+		log.Println(err)
+		return utils.NewApiError(errors.New("editing user error"), err.Status())
 	}
 	return nil
 }

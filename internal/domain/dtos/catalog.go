@@ -14,11 +14,6 @@ type (
 		Quantity string `json:"quantity"`
 	}
 
-	Rating struct {
-		UserID string `json:"user_id"`
-		Rating int    `json:"rating"`
-	}
-
 	Recipe struct {
 		Name         string       `json:"name"`
 		Category     string       `json:"category"`
@@ -26,5 +21,12 @@ type (
 		Instructions []string     `json:"instructions"`
 		CreatorId    string       `json:"creatorId"`
 		Description  string       `json:"description"`
+		Likes        int          `json:"likes"`
+		Ratings      []Rating     `json:"ratings"`
+	}
+
+	Rating struct {
+		UserID string  `json:"user_id"`
+		Rating float64 `json:"rating"`
 	}
 )

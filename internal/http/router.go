@@ -17,6 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
+	"log"
 )
 
 type Router interface {
@@ -43,7 +44,7 @@ func (r *router) buildRoutes() {
 	aiRepository := catalogrepository.NewAIRepository()
 	scrappingRepository := catalogrepository.NewScrappingRepository()
 	authRepository := authrepository.NewAuthRepository()
-	postsRepository := postrepository.NewCatalogRepository()
+	postsRepository := postrepository.NewPostRepository()
 
 	catalogService := catalogservice.NewCatalogService(catalogRepository)
 	aiService := catalogservice.NewAIService(aiRepository)
@@ -84,6 +85,7 @@ func (r *router) buildRoutes() {
 	// GraphQL Config
 	schema, err := graphql.NewSchema(graph.NewSchema(catalogService, authService, scrappingService, aiService, postsService))
 	if err != nil {
+		log.Println(err)
 		panic(err)
 	}
 	h := handler.New(&handler.Config{
@@ -94,6 +96,7 @@ func (r *router) buildRoutes() {
 	r.eng.GET("/graphql", gin.WrapH(h))
 	r.eng.POST("/graphql", gin.WrapH(h))
 }
+
 func (r *router) addSystemPaths() {
 	r.eng.GET(defines.PingPath, controllers.Ping())
 }

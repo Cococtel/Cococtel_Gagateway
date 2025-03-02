@@ -5,7 +5,7 @@ import (
 	"github.com/Cococtel/Cococtel_Gagateway/internal/domain/entities"
 	"github.com/Cococtel/Cococtel_Gagateway/internal/repository/catalogrepository"
 	"github.com/Cococtel/Cococtel_Gagateway/internal/utils"
-	"net/http"
+	"log"
 )
 
 type (
@@ -24,7 +24,8 @@ func NewScrappingService(repo catalogrepository.IScrapping) IScrapping {
 func (ss *scrappingService) GetProductByCode(code string) (*entities.Product, utils.ApiError) {
 	product, err := ss.scrappingRepository.GetProductByCode(code)
 	if err != nil {
-		return nil, utils.NewApiError(errors.New("product not found"), http.StatusNotFound)
+		log.Println(err)
+		return nil, utils.NewApiError(errors.New("product not found"), err.Status())
 	}
 	return product, nil
 }

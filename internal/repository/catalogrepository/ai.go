@@ -3,108 +3,152 @@ package catalogrepository
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/Cococtel/Cococtel_Gagateway/internal/domain/entities"
 	"io/ioutil"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
+	"time"
+
+	"github.com/Cococtel/Cococtel_Gagateway/internal/domain/entities"
+	"github.com/Cococtel/Cococtel_Gagateway/internal/utils"
 )
 
 type (
 	IAI interface {
-		ProcessStrings(input []string) (string, error)
-		CreateRecipe(liquor string) (*entities.AIRecipe, error)
-		ExtractTextFromImage(imageBytes []byte) ([]string, error)
+		ProcessStrings(input []string) (string, utils.ApiError)
+		CreateRecipe(liquor string) (*entities.AIRecipe, utils.ApiError)
+		ExtractTextFromImage(imageBytes []byte) ([]string, utils.ApiError)
 	}
 	aiRepository struct{}
 )
 
-var ms_ai_endpoint string
-var ms_ai_image_recognition string
+var (
+	msAIEndpoint         string
+	msAIImageRecognition string
+)
 
 func NewAIRepository() IAI {
-	ms_ai_endpoint = os.Getenv("MS_AI_DOMAIN")
-	ms_ai_image_recognition = os.Getenv("MS_IMAGE_RECOGNITION_DOMAIN")
+	msAIEndpoint = os.Getenv("MS_AI_DOMAIN")
+	msAIImageRecognition = os.Getenv("MS_IMAGE_RECOGNITION_DOMAIN")
 	return &aiRepository{}
 }
 
-func (ir *aiRepository) ProcessStrings(input []string) (string, error) {
-	url := fmt.Sprintf("%s/DeduceLiquorName", ms_ai_endpoint)
-	body, _ := json.Marshal(input)
+func (ir *aiRepository) ProcessStrings(input []string) (string, utils.ApiError) {
+	start := time.Now()
+	url := fmt.Sprintf("%s/DeduceLiquorName", msAIEndpoint)
+
+	body, err := json.Marshal(input)
+	if err != nil {
+		log.Println(err)
+		utils.MeasureRequest("ai", "ProcessStrings", start, http.StatusBadRequest, err)
+		return "", utils.NewApiError(err, http.StatusBadRequest)
+	}
 
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		return "", err
+		log.Println(err)
+		utils.MeasureRequest("ai", "ProcessStrings", start, http.StatusInternalServerError, err)
+		return "", utils.NewApiError(err, resp.StatusCode)
 	}
 	defer resp.Body.Close()
 
 	resultBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		log.Println(err)
+		utils.MeasureRequest("ai", "ProcessStrings", start, resp.StatusCode, err)
+		return "", utils.NewApiError(err, http.StatusInternalServerError)
 	}
 
+	if resp.StatusCode > http.StatusMultipleChoices {
+		log.Println(string(resultBytes))
+		utils.MeasureRequest("ai", "ProcessStrings", start, resp.StatusCode, errors.New(resp.Status))
+		return "", utils.NewApiError(err, resp.StatusCode)
+	}
+
+	utils.MeasureRequest("ai", "ProcessStrings", start, resp.StatusCode, nil)
 	return string(resultBytes), nil
 }
 
-func (ir *aiRepository) CreateRecipe(liquor string) (*entities.AIRecipe, error) {
-	url := fmt.Sprintf("%s/CreateRecipe?liquor=%s", ms_ai_endpoint, liquor)
+func (ir *aiRepository) CreateRecipe(liquor string) (*entities.AIRecipe, utils.ApiError) {
+	start := time.Now()
+	url := fmt.Sprintf("%s/CreateRecipe?liquor=%s", msAIEndpoint, liquor)
 
 	resp, err := http.Post(url, "application/json", nil)
 	if err != nil {
-		return nil, err
+		log.Println(err)
+		utils.MeasureRequest("ai", "CreateRecipe", start, http.StatusInternalServerError, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
 	defer resp.Body.Close()
 
 	var recipe entities.AIRecipe
 	if err := json.NewDecoder(resp.Body).Decode(&recipe); err != nil {
-		return nil, err
+		utils.MeasureRequest("ai", "CreateRecipe", start, resp.StatusCode, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
 
+	if resp.StatusCode > http.StatusMultipleChoices {
+		log.Println(resp.Body)
+		utils.MeasureRequest("ai", "CreateRecipe", start, resp.StatusCode, errors.New(resp.Status))
+		return nil, utils.NewApiError(errors.New("re"), resp.StatusCode)
+	}
+
+	utils.MeasureRequest("ai", "CreateRecipe", start, resp.StatusCode, nil)
 	return &recipe, nil
 }
 
-func (ir *aiRepository) ExtractTextFromImage(imageBytes []byte) ([]string, error) {
-	// Crear un buffer y un multipart writer para construir la solicitud form-data.
+func (ir *aiRepository) ExtractTextFromImage(imageBytes []byte) ([]string, utils.ApiError) {
+	start := time.Now()
 	var buf bytes.Buffer
 	writer := multipart.NewWriter(&buf)
 
-	// Crear el campo "imageFile" con un nombre de archivo (por ejemplo, "image.jpg").
 	part, err := writer.CreateFormFile("imageFile", "image.jpg")
 	if err != nil {
-		return nil, err
+		log.Println(err)
+		utils.MeasureRequest("ai", "ExtractTextFromImage", start, http.StatusBadRequest, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
-	// Escribir los bytes de la imagen en el campo.
 	if _, err := part.Write(imageBytes); err != nil {
-		return nil, err
+		utils.MeasureRequest("ai", "ExtractTextFromImage", start, http.StatusBadRequest, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
-	// Es importante cerrar el writer para que se añada el boundary al Content-Type.
 	if err := writer.Close(); err != nil {
-		return nil, err
+		utils.MeasureRequest("ai", "ExtractTextFromImage", start, http.StatusBadRequest, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
 
-	// Construir la solicitud HTTP con el body del multipart.
-	req, err := http.NewRequest(http.MethodPost, ms_ai_image_recognition, &buf)
+	req, err := http.NewRequest(http.MethodPost, msAIImageRecognition, &buf)
 	if err != nil {
-		return nil, err
+		log.Println(err)
+		utils.MeasureRequest("ai", "ExtractTextFromImage", start, http.StatusBadRequest, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
-	// Establecer el Content-Type con el boundary generado.
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		log.Println(err)
+		utils.MeasureRequest("ai", "ExtractTextFromImage", start, 500, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("status error: %v", resp.Status)
+	if resp.StatusCode > http.StatusMultipleChoices {
+		err := fmt.Errorf("status error: %v", resp.Status)
+		utils.MeasureRequest("ai", "ExtractTextFromImage", start, resp.StatusCode, errors.New(resp.Status))
+		return nil, utils.NewApiError(err, resp.StatusCode)
 	}
 
 	var texts []string
 	if err := json.NewDecoder(resp.Body).Decode(&texts); err != nil {
-		return nil, err
+		utils.MeasureRequest("ai", "ExtractTextFromImage", start, resp.StatusCode, err)
+		return nil, utils.NewApiError(err, http.StatusInternalServerError)
 	}
+
+	utils.MeasureRequest("ai", "ExtractTextFromImage", start, resp.StatusCode, nil)
 	return texts, nil
 }

@@ -3,6 +3,7 @@ package graph
 import (
 	"encoding/base64"
 	"github.com/Cococtel/Cococtel_Gagateway/internal/services/postservice"
+	"log"
 	"strings"
 
 	"github.com/Cococtel/Cococtel_Gagateway/internal/domain/dtos"
@@ -33,7 +34,6 @@ func NewSchema(
 	ingredientType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Ingredient",
 		Fields: graphql.Fields{
-			"_id":      &graphql.Field{Type: graphql.String},
 			"name":     &graphql.Field{Type: graphql.String},
 			"quantity": &graphql.Field{Type: graphql.String},
 		},
@@ -43,7 +43,7 @@ func NewSchema(
 		Name: "Rating",
 		Fields: graphql.Fields{
 			"user_id": &graphql.Field{Type: graphql.String},
-			"rating":  &graphql.Field{Type: graphql.Int},
+			"rating":  &graphql.Field{Type: graphql.Float},
 		},
 	})
 
@@ -638,19 +638,33 @@ func NewSchema(
 		"updateRecipe": &graphql.Field{
 			Type: recipeType,
 			Args: graphql.FieldConfigArgument{
-				"_id":         &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-				"name":        &graphql.ArgumentConfig{Type: graphql.String},
-				"category":    &graphql.ArgumentConfig{Type: graphql.String},
-				"description": &graphql.ArgumentConfig{Type: graphql.String},
+				"_id":          &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"name":         &graphql.ArgumentConfig{Type: graphql.String},
+				"category":     &graphql.ArgumentConfig{Type: graphql.String},
+				"ingredients":  &graphql.ArgumentConfig{Type: graphql.NewList(ingredientType)},
+				"instructions": &graphql.ArgumentConfig{Type: graphql.NewList(graphql.String)},
+				"description":  &graphql.ArgumentConfig{Type: graphql.String},
+				"likes":        &graphql.ArgumentConfig{Type: graphql.Int},
+				"ratings": &graphql.ArgumentConfig{
+					Type: graphql.NewList(graphql.NewInputObject(graphql.InputObjectConfig{
+						Name: "RatingInput",
+						Fields: graphql.InputObjectConfigFieldMap{
+							"user_id": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+							"rating":  &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.Int)},
+						},
+					})),
+				},
 			},
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 				id := params.Args["_id"].(string)
 				updates := make(map[string]interface{})
+
 				for key, value := range params.Args {
 					if key != "_id" {
 						updates[key] = value
 					}
 				}
+
 				updatedRecipe, apiErr := catalogService.UpdateRecipe(id, updates)
 				if apiErr != nil {
 					return nil, apiErr.Message()
@@ -667,6 +681,7 @@ func NewSchema(
 				id := params.Args["_id"].(string)
 				err := catalogService.DeleteRecipe(id)
 				if err != nil {
+					log.Println(err)
 					return false, err.Message()
 				}
 				return true, nil
@@ -900,6 +915,7 @@ func NewSchema(
 				imageBase64 := params.Args["imageBase64"].(string)
 				imageBytes, err := decodeBase64(imageBase64)
 				if err != nil {
+					log.Println(err)
 					return map[string]interface{}{
 						"data": nil,
 						"error": map[string]interface{}{

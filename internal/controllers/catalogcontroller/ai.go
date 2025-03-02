@@ -5,6 +5,7 @@ import (
 	"github.com/Cococtel/Cococtel_Gagateway/internal/utils"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 
@@ -80,6 +81,8 @@ func (ai *aiController) ExtractText() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		file, _, err := ctx.Request.FormFile("imageFile")
 		if err != nil {
+			log.Println(err)
+			log.Println(err)
 			utils.Response(ctx, http.StatusBadRequest, map[string]interface{}{
 				"data": nil,
 				"error": map[string]interface{}{
@@ -93,6 +96,8 @@ func (ai *aiController) ExtractText() gin.HandlerFunc {
 
 		imageBytes, err := ioutil.ReadAll(file)
 		if err != nil {
+			log.Println(err)
+			log.Println(err)
 			utils.Response(ctx, http.StatusInternalServerError, map[string]interface{}{
 				"data": nil,
 				"error": map[string]interface{}{

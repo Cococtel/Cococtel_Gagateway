@@ -5,7 +5,7 @@ import (
 	"github.com/Cococtel/Cococtel_Gagateway/internal/domain/entities"
 	"github.com/Cococtel/Cococtel_Gagateway/internal/repository/catalogrepository"
 	"github.com/Cococtel/Cococtel_Gagateway/internal/utils"
-	"net/http"
+	"log"
 )
 
 type (
@@ -26,7 +26,8 @@ func NewAIService(repo catalogrepository.IAI) IAI {
 func (is *aiService) ProcessStrings(input []string) (string, utils.ApiError) {
 	result, err := is.aiRepository.ProcessStrings(input)
 	if err != nil {
-		return "", utils.NewApiError(errors.New("error getting liquor"), http.StatusInternalServerError)
+		log.Println(err)
+		return "", utils.NewApiError(errors.New("error getting liquor"), err.Status())
 	}
 	return result, nil
 }
@@ -34,7 +35,8 @@ func (is *aiService) ProcessStrings(input []string) (string, utils.ApiError) {
 func (is *aiService) CreateRecipe(liquor string) (*entities.AIRecipe, utils.ApiError) {
 	recipe, err := is.aiRepository.CreateRecipe(liquor)
 	if err != nil {
-		return nil, utils.NewApiError(errors.New("error generating recipe"), http.StatusInternalServerError)
+		log.Println(err)
+		return nil, utils.NewApiError(errors.New("error generating recipe"), err.Status())
 	}
 	return recipe, nil
 }
@@ -42,7 +44,8 @@ func (is *aiService) CreateRecipe(liquor string) (*entities.AIRecipe, utils.ApiE
 func (is *aiService) ExtractTextFromImage(imageBytes []byte) ([]string, utils.ApiError) {
 	texts, err := is.aiRepository.ExtractTextFromImage(imageBytes)
 	if err != nil {
-		return nil, utils.NewApiError(errors.New("error extracting text from image"), http.StatusInternalServerError)
+		log.Println(err)
+		return nil, utils.NewApiError(errors.New("error extracting text from image"), err.Status())
 	}
 	return texts, nil
 }
